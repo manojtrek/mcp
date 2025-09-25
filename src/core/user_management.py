@@ -3,7 +3,7 @@ User management and role-based task generation
 """
 
 import streamlit as st
-from config import USER_PROFILES
+from src.config.config import USER_PROFILES
 
 
 def fetch_user_profile():

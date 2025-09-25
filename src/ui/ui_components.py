@@ -3,20 +3,20 @@ UI components for the Streamlit MCP application
 """
 
 import streamlit as st
-from config import PROMPT_LIBRARY, USER_PROFILES
-from mcp_handlers import (
+from src.config.config import PROMPT_LIBRARY, USER_PROFILES
+from src.handlers.mcp_handlers import (
     add_mcp_server, remove_mcp_server, connect_to_mcp_server, 
     disconnect_mcp_server, get_public_mcp_servers, simulate_mcp_tool_execution
 )
-from user_management import refresh_user_data, switch_user
+from src.core.user_management import refresh_user_data, switch_user
 
 
 def render_header():
     """Render the application header"""
     st.markdown("""
     <div class="main-header">
-        <h1>🚀 Linear Project Assistant</h1>
-        <p>Your AI-powered Linear workspace management tool</p>
+        <h1>🚀 CEVC - Planner</h1>
+        <p>Client Engagement Value Cycle - AI-powered workspace management</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -25,41 +25,55 @@ def render_custom_css():
     """Render custom CSS for the application"""
     st.markdown("""
     <style>
+    /* Remove default Streamlit spacing */
+    .main .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    
+    /* Remove extra spacing from the top */
+    .stApp > header {
+        display: none;
+    }
+    
     .main-header {
         text-align: center;
-        padding: 2rem 0;
+        padding: 0.8rem 0;
         background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
         color: white;
-        border-radius: 10px;
-        margin-bottom: 2rem;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        margin-top: 0;
     }
     
     .main-header h1 {
         margin: 0;
-        font-size: 2.5rem;
+        font-size: 1.6rem;
         font-weight: bold;
+        line-height: 1.2;
     }
     
     .main-header p {
-        margin: 0.5rem 0 0 0;
-        font-size: 1.2rem;
+        margin: 0.2rem 0 0 0;
+        font-size: 0.9rem;
         opacity: 0.9;
+        line-height: 1.2;
     }
     
     .chat-container {
         background: #f8f9fa;
-        border-radius: 10px;
-        padding: 1rem;
-        margin: 1rem 0;
+        border-radius: 8px;
+        padding: 0.5rem;
+        margin: 0.5rem 0;
         border: 1px solid #e9ecef;
     }
     
     .prompt-card {
         background: white;
         border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 15px;
-        margin: 10px 0;
+        border-radius: 6px;
+        padding: 10px;
+        margin: 5px 0;
         cursor: pointer;
         transition: all 0.3s ease;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -69,6 +83,23 @@ def render_custom_css():
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         border-color: #667eea;
+    }
+    
+    /* Reduce spacing in sidebar */
+    .stSidebar .stMarkdown {
+        margin-bottom: 0.5rem;
+    }
+    
+    .stSidebar .stExpander {
+        margin-bottom: 0.5rem;
+    }
+    
+    .stSidebar .stSelectbox {
+        margin-bottom: 0.3rem;
+    }
+    
+    .stSidebar .stButton {
+        margin-bottom: 0.3rem;
     }
     
     .prompt-card h4 {
@@ -134,36 +165,37 @@ def render_custom_css():
 
 def render_user_profile_section():
     """Render user profile section in sidebar"""
-    st.markdown("### 👤 User Profile")
     user_profile = st.session_state.user_profile
     
-    # User login/selection
-    with st.expander("🔐 Login/User Selection", expanded=False):
+    # Make the entire user profile collapsible
+    with st.expander("👤 User Profile", expanded=False):
+        # User login/selection - no nested expander
+        st.markdown("**🔐 Login**")
         selected_user = st.selectbox(
             "Select User:",
             list(USER_PROFILES.keys()),
             key="user_selector"
         )
         
-        if st.button("🔄 Refresh User Data"):
+        if st.button("🔄 Refresh"):
             success, message = switch_user(selected_user)
             if success:
                 st.success(message)
                 st.rerun()
             else:
                 st.error(message)
-    
-    # Display current user info
-    st.info(f"""
-    **{user_profile['name']}**  
-    {user_profile['role'].title()} | {user_profile['team']}  
-    📧 {user_profile['email']}
-    """)
+        
+        # Display current user info - very compact
+        st.markdown(f"""
+        **{user_profile['name']}**  
+        {user_profile['role'].title()} | {user_profile['team']}  
+        📧 {user_profile['email']}
+        """)
 
 
 def render_user_tasks_section():
     """Render user-specific tasks section"""
-    st.header("📋 My Tasks & Actions")
+    st.markdown("#### 📋 My Tasks & Actions")
     st.markdown("Personalized tasks based on your role and permissions:")
     
     # User-specific tasks
@@ -227,7 +259,7 @@ def render_user_tasks_section():
 
 def render_mcp_servers_section():
     """Render MCP servers management section"""
-    st.header("🛠️ MCP Server Management")
+    st.markdown("#### 🛠️ MCP Server Management")
     
     # Add new MCP server
     with st.expander("➕ Add New MCP Server", expanded=False):
@@ -284,64 +316,51 @@ def render_mcp_servers_section():
     else:
         st.info("No MCP servers configured. Add one above to get started!")
     
-    # Public MCP servers
-    st.subheader("🌐 Public MCP Servers")
-    st.markdown("Add publicly available MCP servers:")
     
-    public_servers = get_public_mcp_servers()
     
-    # Display public servers in a grid
-    cols = st.columns(2)
-    for i, (server_id, server_info) in enumerate(public_servers.items()):
-        with cols[i % 2]:
-            with st.container():
-                st.markdown(f"""
-                <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin: 5px 0;">
-                    <h4>{server_info['name']}</h4>
-                    <p>{server_info['description']}</p>
-                    <small>Category: {server_info['category']}</small>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if st.button(f"Add {server_info['name']}", key=f"add_{server_id}"):
-                    add_mcp_server(
-                        server_info['name'], 
-                        server_info['host'], 
-                        server_info['port'], 
-                        server_info['description']
-                    )
-                    st.success(f"Added {server_info['name']}")
-                    st.rerun()
     
-    # Quick setup for common servers
-    st.subheader("🚀 Quick Setup")
-    col1, col2 = st.columns(2)
+    # Tools and Status section
+    st.markdown("---")
+    st.subheader("📡 MCP Server Status")
+    if st.session_state.mcp_servers:
+        for server_name, server in st.session_state.mcp_servers.items():
+            status_icon = "🟢" if server["status"] == "connected" else "🔴"
+            st.write(f"{status_icon} **{server_name}**")
+            st.caption(f"{server['host']}:{server['port']}")
+            if server["tools"]:
+                st.caption(f"📋 {len(server['tools'])} tools")
+    else:
+        st.info("No MCP servers configured")
+        st.caption("Go to MCP Servers tab to add servers")
     
-    with col1:
-        if st.button("📁 Add All System Servers", help="Add filesystem and git servers"):
-            add_mcp_server("Filesystem MCP", "localhost", 3001, "File system operations")
-            add_mcp_server("Git MCP", "localhost", 3002, "Git repository operations")
-            st.success("Added system servers!")
-            st.rerun()
+    # Available Tools
+    st.subheader("🔧 Available Tools")
     
-    with col2:
-        if st.button("🌐 Add All Network Servers", help="Add web search and fetch servers"):
-            add_mcp_server("Web Search MCP", "localhost", 3003, "Web search and content fetching")
-            add_mcp_server("Fetch MCP", "localhost", 3006, "HTTP requests and API calls")
-            st.success("Added network servers!")
-            st.rerun()
+    # Built-in tools
+    st.write("**Built-in Tools:**")
+    for tool in st.session_state.regular_tools:
+        st.caption(f"• {tool['name']}")
+    
+    # MCP tools
+    if st.session_state.mcp_tools:
+        st.write("**MCP Tools:**")
+        for connection, tools in st.session_state.mcp_tools.items():
+            st.write(f"**{connection}:**")
+            for tool in tools:
+                st.caption(f"• {tool['name']}")
+    
 
 
 def render_settings_section():
     """Render settings section"""
-    st.header("⚙️ Settings")
+    st.markdown("#### ⚙️ Settings")
     
     # Azure OpenAI Configuration
-    st.subheader("🤖 Azure OpenAI Configuration")
+    st.markdown("##### 🤖 Azure OpenAI Configuration")
     st.info("Configure your Azure OpenAI settings in the .env file")
     
     # Display current configuration
-    from config import AZURE_OPENAI_CONFIG
+    from src.config.config import AZURE_OPENAI_CONFIG
     config_status = "✅ Configured" if AZURE_OPENAI_CONFIG["api_key"] else "❌ Not configured"
     st.write(f"**Status:** {config_status}")
     
@@ -438,31 +457,3 @@ def render_tools_status_section():
             for tool in tools:
                 st.caption(f"• {tool['name']}")
     
-    # Quick actions
-    st.subheader("⚡ Quick Actions")
-    if st.button("📋 View All Issues"):
-        st.session_state.messages.append({
-            "role": "user", 
-            "content": "Show me all open issues in my Linear workspace"
-        })
-        st.session_state.trigger_ai_response = True
-        st.rerun()
-    
-    if st.button("📊 Project Status"):
-        st.session_state.messages.append({
-            "role": "user", 
-            "content": "What's the current status of my active projects?"
-        })
-        st.session_state.trigger_ai_response = True
-        st.rerun()
-    
-    if st.button("👥 Team Workload"):
-        st.session_state.messages.append({
-            "role": "user", 
-            "content": "Show me the current workload for my team members"
-        })
-        st.session_state.trigger_ai_response = True
-        st.rerun()
-    
-    if st.button("🔄 Refresh Status"):
-        st.rerun()

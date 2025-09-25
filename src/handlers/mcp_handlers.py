@@ -4,7 +4,7 @@ MCP (Model Context Protocol) server management and tool execution
 
 import socket
 import streamlit as st
-from config import MCP_TOOLS, PUBLIC_MCP_SERVERS
+from src.config.config import MCP_TOOLS, PUBLIC_MCP_SERVERS
 
 
 def test_mcp_connection(host, port):
